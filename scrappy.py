@@ -14,6 +14,7 @@ companies = []
 job_titles = []
 locations = []
 languages = []
+addresses = []
 
 for job in job_listings:
     if 'result-info' not in job.get('class', []):
@@ -45,7 +46,7 @@ data = {
     "Company": companies,
     "Title": job_titles,
     "Location": locations,
-    "Language": languages
+    "Language": languages,
 }
 
 df = pd.DataFrame(data)
