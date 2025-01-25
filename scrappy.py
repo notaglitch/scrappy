@@ -1,8 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+from openpyxl import load_workbook
 
-url = 'https://www.orientation.ch/dyn/show/170785?lang=fr&Idx=0&OrderBy=1&Order=0&PostBackOrder=0&postBack=true&CountResult=0&Total_Idx=0&CounterSearch=4&UrlAjaxWebSearch=%2FLeFiWeb%2FAjaxWebSearch&getTotal=False&isBlankState=True&prof_=88613.1&fakelocalityremember=&LocName=Neuch%C3%A2tel&LocId=neuchatel-ne-ch&Area=10&AreaCriteria=10'
+url = 'https://www.orientation.ch/dyn/show/170785?lang=fr&Idx=20&OrderBy=1&Order=0&PostBackOrder=0&postBack=true&CountResult=27&Total_Idx=27&CounterSearch=6&UrlAjaxWebSearch=%2FLeFiWeb%2FAjaxWebSearch&getTotal=True&isBlankState=False&prof_=47419.1&fakelocalityremember=&LocName=Neuch%C3%A2tel&LocId=neuchatel-ne-ch&Area=10&LocatorVM.Area=10&langcode_=de&langcode_=fr&langcode_=it&langcode_=rm&langcode_=en'
 
 response = requests.get(url)
 
@@ -14,6 +15,7 @@ companies = []
 job_titles = []
 locations = []
 languages = []
+addresses = []
 
 for job in job_listings[1:]:
     if 'result-info' not in job.get('class', []):
@@ -33,15 +35,45 @@ for job in job_listings[1:]:
             'div', class_='table-col-4')
         languages.append(language.text.strip() if language else "N/A")
 
+job_contacts = soup.find_all('div', class_='result-elem-lower')
+for result in job_contacts:
+    address_section = result.find('div', class_='w45')
+    if address_section:
+        address = address_section.find('p')
+        if address:
+            address_text = address.get_text(separator=" ").strip()
+            addresses.append(address_text)
+        else:
+            addresses.append("N/A")
+    else:
+        addresses.append("N/A")
+
 data = {
     "Company": companies,
     "Title": job_titles,
     "Location": locations,
     "Language": languages,
+    "Address": addresses
 }
 
 df = pd.DataFrame(data)
+df.to_excel('job_listing.xlsx', index=False, header=True, engine='openpyxl')
 
-df.to_csv('job_listing.csv', index=False, header=True)
+wb = load_workbook('job_listing.xlsx')
+ws = wb.active
+
+for col in ws.columns:
+    max_length = 0
+    column = col[0].column_letter
+    for cell in col:
+        try:
+            if len(str(cell.value)) > max_length:
+                max_length = len(cell.value)
+        except:
+            pass
+    adjusted_width = (max_length + 2)
+    ws.column_dimensions[column].width = adjusted_width
+
+wb.save('job_listing.xlsx')
 
 print("Data has been saved successfully")
