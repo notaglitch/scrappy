@@ -14,33 +14,24 @@ companies = []
 job_titles = []
 locations = []
 languages = []
-addresses = []
 
-for job in job_listings:
+for job in job_listings[1:]:
     if 'result-info' not in job.get('class', []):
-        company = job.find('div', class_='table-col-1')
-        if company:
-            companies.append(company.text.strip())
-        else:
-            companies.append("N/A")
+        company = job.find(
+            'div', class_='table-col-1')
+        companies.append(company.text.strip() if company else "N/A")
 
-        job_title = job.find('div', class_='table-col-2')
-        if job_title:
-            job_titles.append(job_title.text.strip())
-        else:
-            job_titles.append("N/A")
+        job_title = job.find(
+            'div', class_='table-col-2')
+        job_titles.append(job_title.text.strip() if job_title else "N/A")
 
-        location = job.find('div', class_='table-col-3')
-        if location:
-            locations.append(location.text.strip())
-        else:
-            locations.append("N/A")
+        location = job.find(
+            'div', class_='table-col-3')
+        locations.append(location.text.strip() if location else "N/A")
 
-        language = job.find('div', class_='table-col-4')
-        if language:
-            languages.append(language.text.strip())
-        else:
-            languages.append("N/A")
+        language = job.find(
+            'div', class_='table-col-4')
+        languages.append(language.text.strip() if language else "N/A")
 
 data = {
     "Company": companies,
@@ -51,6 +42,6 @@ data = {
 
 df = pd.DataFrame(data)
 
-df.to_csv('job_listing.csv', index=False, header=False)
+df.to_csv('job_listing.csv', index=False, header=True)
 
 print("Data has been saved successfully")
