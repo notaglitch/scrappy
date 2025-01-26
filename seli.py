@@ -8,21 +8,15 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from openpyxl import load_workbook
 
-url = input("Enter the url: ")
-# Set the path to the chromedriver
 chromedriver_path = r"C:\Program Files\Google\Chrome\Driver\chromedriver-win64\chromedriver.exe"
 service = Service(chromedriver_path)
 driver = webdriver.Chrome(service=service)
 
-# Open the website
-# url = "https://www.orientation.ch/dyn/show/170785?lang=fr&Idx=20&OrderBy=1&Order=0&PostBackOrder=0&postBack=true&CountResult=446&Total_Idx=446&CounterSearch=26&UrlAjaxWebSearch=%2FLeFiWeb%2FAjaxWebSearch&getTotal=True&isBlankState=False&prof_=68800.1&fakelocalityremember=&LocName=Neuch%C3%A2tel&LocId=neuchatel-ne-ch&Area=10&AreaCriteria=10&langcode_=de&langcode_=fr&langcode_=it&langcode_=rm&langcode_=en"
+url = "https://www.orientation.ch/dyn/show/170785?lang=fr&Idx=20&OrderBy=1&Order=0&PostBackOrder=0&postBack=true&CountResult=446&Total_Idx=446&CounterSearch=26&UrlAjaxWebSearch=%2FLeFiWeb%2FAjaxWebSearch&getTotal=True&isBlankState=False&prof_=68800.1&fakelocalityremember=&LocName=Neuch%C3%A2tel&LocId=neuchatel-ne-ch&Area=10&AreaCriteria=10&langcode_=de&langcode_=fr&langcode_=it&langcode_=rm&langcode_=en"
 driver.get(url)
 
-# Wait for the page to load
 WebDriverWait(driver, 10).until(EC.presence_of_element_located(
     (By.XPATH, "//a[@id='aSearchPaging']")))
-
-# Function to click the "More results" button until it disappears
 
 
 def decrypt_email(encrypted_str, encryption_key="EncryptionKey"):
@@ -43,37 +37,44 @@ def decrypt_email(encrypted_str, encryption_key="EncryptionKey"):
     return decrypted_str
 
 
+def scroll_to_bottom():
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    while True:
+        # Leave 1500px at the bottom
+        new_scroll_position = last_height - 1500
+        driver.execute_script(f"window.scrollTo(0, {new_scroll_position});")
+        time.sleep(3)
+
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+
+
 def click_more_results():
     while True:
         try:
-            # Wait for the "More results" button to be clickable
+            scroll_to_bottom()
             more_button = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable(
                     (By.XPATH, "//a[@id='aSearchPaging' and contains(text(), 'Afficher plus de résultats')]"))
             )
 
-            # Click the "More" button
             more_button.click()
             print("Clicked 'More' button...")
 
-            # Wait for new results to load
-            time.sleep(10)
+            time.sleep(5)
         except Exception as e:
-            # Break the loop if the "More" button is not found (i.e., no more results to load)
             print("No more 'More' buttons to click.")
             break
 
 
-# Call the function to click the "More results" button
 click_more_results()
 
-# Once all content is loaded, get the page source
 page_source = driver.page_source
 
-# Parse the page with BeautifulSoup
 soup = BeautifulSoup(page_source, 'html.parser')
 
-# Now scrape the data from the page
 job_listings = soup.find_all('div', class_='display-table-row')
 
 companies = []
@@ -133,7 +134,6 @@ for result in job_contacts:
     else:
         addresses.append("N/A")
 
-
 emails = []
 
 for script in email_scripts:
@@ -145,18 +145,11 @@ for script in email_scripts:
     else:
         emails.append("NOT FOUND")
 
-# print(f"{len(companies)} companies and {len(emails)} emails and {len(addresses)} addresses. ")
-# for i in range(len(companies)):
-#     print(
-#         f"Company: {companies[i]}, Title: {job_titles[i]}, Location: {locations[i]}, Language: {languages[i]}, Address: {addresses[i]}, Email:{emails[i]}")
-
 data = {
     "Company": companies,
     "Title": job_titles,
     "Location": locations,
     "Language": languages,
-    # "Address": addresses,
-    # "Email": emails
 }
 
 df = pd.DataFrame(data)
@@ -181,5 +174,4 @@ file_name = input("Give a name for this file: ")
 wb.save(f"{file_name}.xlsx")
 
 print("Data has been saved successfully")
-# Close the browser
 driver.quit()
