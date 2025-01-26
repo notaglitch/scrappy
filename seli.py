@@ -77,29 +77,61 @@ companies = []
 job_titles = []
 locations = []
 languages = []
+addresses = []
 emails = []
 
-for job in job_listings[1:]:
+for job in job_listings:
     if 'result-info' not in job.get('class', []):
         company = job.find('div', class_='table-col-1')
-        companies.append(company.text.strip() if company else "N/A")
+        if company:
+            if company.text != "Entreprise":
+                companies.append(company.text.strip())
+        else:
+            companies.append("N/A")
 
         job_title = job.find('div', class_='table-col-2')
-        job_titles.append(job_title.text.strip() if job_title else "N/A")
+        if job_title:
+            if job_title.text != "Profession":
+                job_titles.append(job_title.text.strip())
+        else:
+            job_titles.append("N/A")
 
         location = job.find('div', class_='table-col-3')
-        locations.append(location.text.strip() if location else "N/A")
+        if location:
+            if location.text != "Localité":
+                locations.append(location.text.strip())
+        else:
+            locations.append("N/A")
 
         language = job.find('div', class_='table-col-4')
-        languages.append(language.text.strip() if language else "N/A")
+        if language:
+            if language.text != "Langue":
+                languages.append(language.text.strip())
+        else:
+            languages.append("N/A")
 
-email_scripts = soup.find_all(
-    'script', string=lambda s: s and 'sdbb.DecrypteEmail' in s)
-if not email_scripts:
+job_contacts = soup.find_all('div', class_='result-elem-lower')
+for result in job_contacts:
     email_scripts = soup.find_all(
-        'script', text=lambda t: t and 'sdbb.DecryptEmail' in t
-    )
+        'script', string=lambda s: s and 'sdbb.DecrypteEmail' in s)
+    if not email_scripts:
+        email_scripts = soup.find_all(
+            'script', text=lambda t: t and 'sdbb.DecryptEmail' in t
+        )
 
+    address_section = result.find('div', class_='w45')
+    if address_section:
+        address = address_section.find('p')
+        if address:
+            address_text = address.get_text(separator=" ").strip()
+            addresses.append(address_text)
+        else:
+            addresses.append("N/A")
+    else:
+        addresses.append("N/A")
+
+
+emails = []
 
 for script in email_scripts:
     if script:
@@ -110,14 +142,12 @@ for script in email_scripts:
     else:
         emails.append("NOT FOUND")
 
-# for i, encrypted in enumerate(emails, 1):
-#     print(f"Key {i}: {decrypted_email}")
-# Print the extracted data
+print(f"{len(companies)} companies and {len(emails)} emails and {len(addresses)} addresses. ")
 for i in range(len(companies)):
     print(
-        f"Company: {companies[i]}, Title: {job_titles[i]}, Location: {locations[i]}, Language: {languages[i], }")
+        f"Company: {companies[i]}, Title: {job_titles[i]}, Location: {locations[i]}, Language: {languages[i]}, Address: {addresses[i]}, Email:{emails[i]}")
 
-for i in emails:
-    print(f"Email: {i}")
+# for i in emails:
+#     print(f"Email: {i}")
 # Close the browser
 driver.quit()
