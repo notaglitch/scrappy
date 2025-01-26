@@ -3,6 +3,25 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from openpyxl import load_workbook
 
+
+def decrypt_email(encrypted_str, encryption_key="EncryptionKey"):
+    encrypted_numbers = encrypted_str.split(",")
+    decrypted_str = ""
+    t = 0
+
+    for num in encrypted_numbers:
+        u = ord(encryption_key[t % len(encryption_key)]) % 96
+        r = int(num) - u
+
+        if r < 32:
+            r += 96
+
+        decrypted_str += chr(r)
+        t += 1
+
+    return decrypted_str
+
+
 url = 'https://www.orientation.ch/dyn/show/170785?lang=fr&Idx=20&OrderBy=1&Order=0&PostBackOrder=0&postBack=true&CountResult=27&Total_Idx=27&CounterSearch=6&UrlAjaxWebSearch=%2FLeFiWeb%2FAjaxWebSearch&getTotal=True&isBlankState=False&prof_=47419.1&fakelocalityremember=&LocName=Neuch%C3%A2tel&LocId=neuchatel-ne-ch&Area=10&LocatorVM.Area=10&langcode_=de&langcode_=fr&langcode_=it&langcode_=rm&langcode_=en'
 
 response = requests.get(url)
@@ -37,6 +56,9 @@ for job in job_listings[1:]:
 
 job_contacts = soup.find_all('div', class_='result-elem-lower')
 for result in job_contacts:
+    email_scripts = soup.find_all(
+        'script', text=lambda t: t and 'sdbb.DecrypteEmail' in t)
+
     address_section = result.find('div', class_='w45')
     if address_section:
         address = address_section.find('p')
@@ -47,6 +69,21 @@ for result in job_contacts:
             addresses.append("N/A")
     else:
         addresses.append("N/A")
+
+
+keys = []
+
+for script in email_scripts:
+    if script:
+        script_text = script.string.strip()
+        last_numbers = script_text.split("'")[5]
+        keys.append(last_numbers)
+    else:
+        keys.append("NOT FOUND")
+
+for i, encrypted in enumerate(keys, 1):
+    decrypted_email = decrypt_email(encrypted)
+    print(f"Key {i}: {decrypted_email}")
 
 data = {
     "Company": companies,
