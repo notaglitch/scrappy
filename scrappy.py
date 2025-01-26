@@ -57,7 +57,11 @@ for job in job_listings[1:]:
 job_contacts = soup.find_all('div', class_='result-elem-lower')
 for result in job_contacts:
     email_scripts = soup.find_all(
-        'script', text=lambda t: t and 'sdbb.DecrypteEmail' in t)
+        'script', string=lambda s: s and 'sdbb.DecrypteEmail' in s)
+    if not email_scripts:
+        email_scripts = soup.find_all(
+            'script', text=lambda t: t and 'sdbb.DecryptEmail' in t
+        )
 
     address_section = result.find('div', class_='w45')
     if address_section:
