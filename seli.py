@@ -22,6 +22,24 @@ WebDriverWait(driver, 10).until(EC.presence_of_element_located(
 # Function to click the "More results" button until it disappears
 
 
+def decrypt_email(encrypted_str, encryption_key="EncryptionKey"):
+    encrypted_numbers = encrypted_str.split(",")
+    decrypted_str = ""
+    t = 0
+
+    for num in encrypted_numbers:
+        u = ord(encryption_key[t % len(encryption_key)]) % 96
+        r = int(num) - u
+
+        if r < 32:
+            r += 96
+
+        decrypted_str += chr(r)
+        t += 1
+
+    return decrypted_str
+
+
 def click_more_results():
     while True:
         try:
@@ -59,6 +77,7 @@ companies = []
 job_titles = []
 locations = []
 languages = []
+emails = []
 
 for job in job_listings[1:]:
     if 'result-info' not in job.get('class', []):
@@ -81,22 +100,24 @@ if not email_scripts:
         'script', text=lambda t: t and 'sdbb.DecryptEmail' in t
     )
 
-keys = []
 
 for script in email_scripts:
     if script:
         script_text = script.string.strip()
         last_numbers = script_text.split("'")[5]
-        keys.append(last_numbers)
+        decrypted_email = decrypt_email(last_numbers)
+        emails.append(decrypted_email)
     else:
-        keys.append("NOT FOUND")
+        emails.append("NOT FOUND")
 
-for i, encrypted in enumerate(keys, 1):
-    print(f"Key {i}: {encrypted}")
+# for i, encrypted in enumerate(emails, 1):
+#     print(f"Key {i}: {decrypted_email}")
 # Print the extracted data
 for i in range(len(companies)):
     print(
-        f"Company: {companies[i]}, Title: {job_titles[i]}, Location: {locations[i]}, Language: {languages[i]}")
+        f"Company: {companies[i]}, Title: {job_titles[i]}, Location: {locations[i]}, Language: {languages[i], }")
 
+for i in emails:
+    print(f"Email: {i}")
 # Close the browser
 driver.quit()
