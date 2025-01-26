@@ -5,14 +5,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from bs4 import BeautifulSoup
+import pandas as pd
+from openpyxl import load_workbook
 
+url = input("Enter the url: ")
 # Set the path to the chromedriver
 chromedriver_path = r"C:\Program Files\Google\Chrome\Driver\chromedriver-win64\chromedriver.exe"
 service = Service(chromedriver_path)
 driver = webdriver.Chrome(service=service)
 
 # Open the website
-url = 'https://www.orientation.ch/dyn/show/170785?lang=fr&Idx=20&OrderBy=1&Order=0&PostBackOrder=0&postBack=true&CountResult=27&Total_Idx=27&CounterSearch=10&UrlAjaxWebSearch=%2FLeFiWeb%2FAjaxWebSearch&getTotal=True&isBlankState=False&prof_=47419.1&fakelocalityremember=&LocName=Neuch%C3%A2tel&LocId=neuchatel-ne-ch&Area=10&LocatorVM.Area=10&langcode_=de&langcode_=fr&langcode_=it&langcode_=rm&langcode_=en'
+# url = "https://www.orientation.ch/dyn/show/170785?lang=fr&Idx=20&OrderBy=1&Order=0&PostBackOrder=0&postBack=true&CountResult=446&Total_Idx=446&CounterSearch=26&UrlAjaxWebSearch=%2FLeFiWeb%2FAjaxWebSearch&getTotal=True&isBlankState=False&prof_=68800.1&fakelocalityremember=&LocName=Neuch%C3%A2tel&LocId=neuchatel-ne-ch&Area=10&AreaCriteria=10&langcode_=de&langcode_=fr&langcode_=it&langcode_=rm&langcode_=en"
 driver.get(url)
 
 # Wait for the page to load
@@ -54,7 +57,7 @@ def click_more_results():
             print("Clicked 'More' button...")
 
             # Wait for new results to load
-            time.sleep(3)
+            time.sleep(10)
         except Exception as e:
             # Break the loop if the "More" button is not found (i.e., no more results to load)
             print("No more 'More' buttons to click.")
@@ -142,12 +145,41 @@ for script in email_scripts:
     else:
         emails.append("NOT FOUND")
 
-print(f"{len(companies)} companies and {len(emails)} emails and {len(addresses)} addresses. ")
-for i in range(len(companies)):
-    print(
-        f"Company: {companies[i]}, Title: {job_titles[i]}, Location: {locations[i]}, Language: {languages[i]}, Address: {addresses[i]}, Email:{emails[i]}")
+# print(f"{len(companies)} companies and {len(emails)} emails and {len(addresses)} addresses. ")
+# for i in range(len(companies)):
+#     print(
+#         f"Company: {companies[i]}, Title: {job_titles[i]}, Location: {locations[i]}, Language: {languages[i]}, Address: {addresses[i]}, Email:{emails[i]}")
 
-# for i in emails:
-#     print(f"Email: {i}")
+data = {
+    "Company": companies,
+    "Title": job_titles,
+    "Location": locations,
+    "Language": languages,
+    # "Address": addresses,
+    # "Email": emails
+}
+
+df = pd.DataFrame(data)
+df.to_excel('job_listing.xlsx', index=False, header=True, engine='openpyxl')
+
+wb = load_workbook('job_listing.xlsx')
+ws = wb.active
+
+for col in ws.columns:
+    max_length = 0
+    column = col[0].column_letter
+    for cell in col:
+        try:
+            if len(str(cell.value)) > max_length:
+                max_length = len(cell.value)
+        except:
+            pass
+    adjusted_width = (max_length + 2)
+    ws.column_dimensions[column].width = adjusted_width
+
+file_name = input("Give a name for this file: ")
+wb.save(f"{file_name}.xlsx")
+
+print("Data has been saved successfully")
 # Close the browser
 driver.quit()
